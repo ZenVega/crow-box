@@ -1,11 +1,9 @@
 #include <Arduino.h>
 #include <avr/sleep.h>
 #include <Stepper.h>
+#include "constants.h"
 
-const int stepsPerRevolution = 2048;
-Stepper myStepper = Stepper(stepsPerRevolution, 4, 6, 5, 7);
-const int coinPin = 2;
-const int calibrationPin = 3;
+Stepper myStepper = Stepper(STEPS_PER_REVOLUTION, STEPPER_PIN_1, STEPPER_PIN_3, STEPPER_PIN_2, STEPPER_PIN_4);
 int buttonState = 0;
 
 #include "constants.h"
@@ -16,35 +14,27 @@ bool calibrating = false;
 void dispense_peanuts()
 {
   Serial.println("Dispensing through interrupt");
-  detachInterrupt(digitalPinToInterrupt(coinPin));
+  detachInterrupt(digitalPinToInterrupt(COIN_INTERRUPT_PIN));
   dispensing = true;
 }
 
 void init_calibration_mode()
 {
   Serial.println("Calibration mode");
-  detachInterrupt(digitalPinToInterrupt(calibrationPin));
+  detachInterrupt(digitalPinToInterrupt(CALIBRATION_INTERRUPT_PIN));
   calibrating = true;
 }
-
-// void turnWheel()
-// {
-//   Serial.println("Turning wheel");
-//   detachInterrupt(digitalPinToInterrupt(buttonPin));
-//   myStepper.setSpeed(10);
-//   myStepper.step(20);
-// }
 
 void setup()
 {
   Serial.begin(9600);
-  pinMode(coinPin, INPUT);
-  digitalWrite(coinPin, HIGH); // Enable internal pull-up resistor
-  attachInterrupt(digitalPinToInterrupt(coinPin), dispense_peanuts, FALLING);
+  pinMode(COIN_INTERRUPT_PIN, INPUT);
+  digitalWrite(COIN_INTERRUPT_PIN, HIGH); // Enable internal pull-up resistor
+  attachInterrupt(digitalPinToInterrupt(COIN_INTERRUPT_PIN), dispense_peanuts, FALLING);
 
-  pinMode(calibrationPin, INPUT);
-  digitalWrite(calibrationPin, HIGH); // Enable internal pull-up resistor
-  attachInterrupt(digitalPinToInterrupt(calibrationPin), init_calibration_mode, FALLING);
+  pinMode(CALIBRATION_INTERRUPT_PIN, INPUT);
+  digitalWrite(CALIBRATION_INTERRUPT_PIN, HIGH); // Enable internal pull-up resistor
+  attachInterrupt(digitalPinToInterrupt(CALIBRATION_INTERRUPT_PIN), init_calibration_mode, FALLING);
 }
 
 void loop()
@@ -52,23 +42,21 @@ void loop()
   if (dispensing)
   {
     Serial.println("Dispensing peanuts");
-    myStepper.setSpeed(12);
-    myStepper.step(-428);
+    myStepper.setSpeed(STEPPER_SPEED);
+    myStepper.step(STEPS_PER_PEANUT);
     dispensing = false;
-    attachInterrupt(digitalPinToInterrupt(coinPin), dispense_peanuts, FALLING);
+    attachInterrupt(digitalPinToInterrupt(COIN_INTERRUPT_PIN), dispense_peanuts, FALLING);
   }
   else if (calibrating)
   {
-    myStepper.setSpeed(12);
-    myStepper.step(-10);
+    myStepper.setSpeed(STEPPER_SPEED);
+    myStepper.step(STEPS_PER_CALIBRATION);
     delay(5);
     Serial.println("Calibrating");
-    if (digitalRead(calibrationPin) == HIGH)
+    if (digitalRead(CALIBRATION_INTERRUPT_PIN) == HIGH)
     {
       calibrating = false;
-      attachInterrupt(digitalPinToInterrupt(calibrationPin), init_calibration_mode, FALLING);
+      attachInterrupt(digitalPinToInterrupt(CALIBRATION_INTERRUPT_PIN), init_calibration_mode, FALLING);
     }
   }
 }
-
-// put function definitions here:
