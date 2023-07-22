@@ -1,12 +1,11 @@
 #include <Arduino.h>
-#include <avr/sleep.h>
 #include <Stepper.h>
 #include "constants.h"
 
+// TODO: Camera activation
+
 Stepper myStepper = Stepper(STEPS_PER_REVOLUTION, STEPPER_PIN_1, STEPPER_PIN_3, STEPPER_PIN_2, STEPPER_PIN_4);
 int buttonState = 0;
-
-#include "constants.h"
 
 bool dispensing = false;
 bool calibrating = false;
@@ -47,7 +46,7 @@ void loop()
     dispensing = false;
     attachInterrupt(digitalPinToInterrupt(COIN_INTERRUPT_PIN), dispense_peanuts, FALLING);
   }
-  else if (calibrating)
+  while (calibrating)
   {
     myStepper.setSpeed(STEPPER_SPEED);
     myStepper.step(STEPS_PER_CALIBRATION);
@@ -57,6 +56,7 @@ void loop()
     {
       calibrating = false;
       attachInterrupt(digitalPinToInterrupt(CALIBRATION_INTERRUPT_PIN), init_calibration_mode, FALLING);
+      // TODO: Sleepmode
     }
   }
 }
