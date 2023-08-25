@@ -16,8 +16,12 @@ void dispense_peanuts()
   detachInterrupt(digitalPinToInterrupt(COIN_INTERRUPT_PIN));
   dispensing = true;
 }
+void IRAM_ATTR isrCoinInterrupt()
+{
+  dispense_peanuts();
+}
 
-void init_calibration_mode()
+void IRAM_ATTR isrCalibrationInterrupt()
 {
   Serial.println("Calibration mode");
   detachInterrupt(digitalPinToInterrupt(CALIBRATION_INTERRUPT_PIN));
@@ -27,17 +31,16 @@ void init_calibration_mode()
 void setup()
 {
   Serial.begin(9600);
-  pinMode(COIN_INTERRUPT_PIN, INPUT);
-  digitalWrite(COIN_INTERRUPT_PIN, HIGH); // Enable internal pull-up resistor
-  attachInterrupt(digitalPinToInterrupt(COIN_INTERRUPT_PIN), dispense_peanuts, FALLING);
+  pinMode(COIN_INTERRUPT_PIN, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(COIN_INTERRUPT_PIN), isrCoinInterrupt, FALLING);
 
-  pinMode(CALIBRATION_INTERRUPT_PIN, INPUT);
-  digitalWrite(CALIBRATION_INTERRUPT_PIN, HIGH); // Enable internal pull-up resistor
-  attachInterrupt(digitalPinToInterrupt(CALIBRATION_INTERRUPT_PIN), init_calibration_mode, FALLING);
+  pinMode(CALIBRATION_INTERRUPT_PIN, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(CALIBRATION_INTERRUPT_PIN), isrCalibrationInterrupt, FALLING);
 }
 
 void loop()
 {
+  Serial.println("Monitor");
   if (dispensing)
   {
     Serial.println("Dispensing peanuts");
@@ -55,8 +58,9 @@ void loop()
     if (digitalRead(CALIBRATION_INTERRUPT_PIN) == HIGH)
     {
       calibrating = false;
-      attachInterrupt(digitalPinToInterrupt(CALIBRATION_INTERRUPT_PIN), init_calibration_mode, FALLING);
+      attachInterrupt(digitalPinToInterrupt(CALIBRATION_INTERRUPT_PIN), isrCalibrationInterrupt, FALLING);
       // TODO: Sleepmode
     }
   }
+  delay(1000);
 }
