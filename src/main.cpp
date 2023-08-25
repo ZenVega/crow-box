@@ -9,6 +9,7 @@ int buttonState = 0;
 
 bool dispensing = false;
 bool calibrating = false;
+bool buzzing = false;
 
 void dispense_peanuts()
 {
@@ -16,9 +17,20 @@ void dispense_peanuts()
   detachInterrupt(digitalPinToInterrupt(COIN_INTERRUPT_PIN));
   dispensing = true;
 }
+void piezo_action()
+{
+  Serial.println("Wakey wakey");
+  detachInterrupt(digitalPinToInterrupt(PIEZO_INTERRUPT_PIN));
+  buzzing = true;
+}
 void IRAM_ATTR isrCoinInterrupt()
 {
   dispense_peanuts();
+}
+
+void IRAM_ATTR isrPiezoInterrupt()
+{
+  piezo_action();
 }
 
 void IRAM_ATTR isrCalibrationInterrupt()
@@ -36,11 +48,19 @@ void setup()
 
   pinMode(CALIBRATION_INTERRUPT_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(CALIBRATION_INTERRUPT_PIN), isrCalibrationInterrupt, FALLING);
+
+  pinMode(PIEZO_INTERRUPT_PIN, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(PIEZO_INTERRUPT_PIN), isrPiezoInterrupt, FALLING);
 }
 
 void loop()
 {
-  Serial.println("Monitor");
+  if (buzzing)
+  {
+    Serial.println("Buzzing");
+    buzzing = false;
+    attachInterrupt(digitalPinToInterrupt(PIEZO_INTERRUPT_PIN), isrPiezoInterrupt, FALLING);
+  }
   if (dispensing)
   {
     Serial.println("Dispensing peanuts");
@@ -49,6 +69,7 @@ void loop()
     dispensing = false;
     attachInterrupt(digitalPinToInterrupt(COIN_INTERRUPT_PIN), dispense_peanuts, FALLING);
   }
+
   while (calibrating)
   {
     myStepper.setSpeed(STEPPER_SPEED);
